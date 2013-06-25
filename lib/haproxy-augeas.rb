@@ -1,14 +1,11 @@
 #!/usr/bin/env ruby
 
-# WARNING, this test case will modify /etc/haproxy/haproxy.cfg
 
 require 'augeas'
 require 'erb'
 require 'ostruct'
 
-require 'pp'
-
-module Haproxy_Docker
+module Haproxy_Augeas
 
 	# Augeas resource to manage
 	AUG_HAPROXY = 			'/files/etc/haproxy/haproxy.cfg'
@@ -290,41 +287,6 @@ module Haproxy_Docker
 end
 
 
-
-# dump all defined listeners
-#pp Haproxy_Docker::get_all_listeners
-
-# dump my listeners only (name must start with HAPROXY_DOCKER_PREFIX)
-#pp Haproxy_Docker::get_my_managed_listeners
-
-# get server keys s of an individual listener
-#pp Haproxy_Docker::get_server_of_listener("appli5-backup")
-
-# prepare a server line from comment 
-#pp Haproxy_Docker::evaluate_server_comment_entry(
-#	"/files/etc/haproxy/haproxy.cfg/listen[1]/dockerha-app1/#comment", 
-#	{ :id => "id1", :ip => "127.0.0.1", :port => "8080" })
-
-# check if a named server is defined within a listener entry
-#pp Haproxy_Docker::has_server_within_listener?("id4711", "dockerha-app1")
-#pp Haproxy_Docker::has_server_within_listener?("id1", "dockerha-app1")
-
-# add servers to a listener
-Haproxy_Docker::ensure_server_within_listener("id2","dockerha-app1", { :ip => "127.0.0.1", :port => "8082" })
-# change  server entry 
-Haproxy_Docker::ensure_server_within_listener("id2","dockerha-app1", { :ip => "127.0.0.1", :port => "8083" })
-# add/change on multiple entries
-Haproxy_Docker::ensure_all_servers_within_listener(
-	{ 	
-		"id2" => { :ip => "127.0.0.1", :port => "8083" },
-		"id3" => { :ip => "127.0.0.2", :port => "8084" },
-		"id4" => { :ip => "127.0.0.2", :port => "8085" },
-	}, "dockerha-app1")
-# remove a server 
-Haproxy_Docker::ensure_server_absent_within_listener("id2","dockerha-app1")
-
-# check if servers are defined, multiple server -
-pp Haproxy_Docker::has_servers_within_listener?(["id1", "id2", "id3", "id4"], "dockerha-app1")
 
 
 
