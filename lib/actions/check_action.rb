@@ -6,12 +6,19 @@ class HADockerConfig_Check < HADockerConfig_Base
 	end
 
 	def parse
-		@data = @input_data.split(",")
+		# except a comma separated list of instance ids
+		@data = @input_data.split(",")		if @input_data && @input_data.size > 0
 	end
 
 	def process
-		# check if servers are defined, multiple server -
-		pp Haproxy_Augeas::has_servers_within_listener? @data, @listener
-
+		if @data then
+			# check if servers are defined, multiple server -
+			return Haproxy_Augeas::has_servers_within_listener? @data, @listener
+		else
+			# just return all balancing members
+			res = Haproxy_Augeas::get_server_of_listener @listener
+			# map to align with same output format as above.
+			return res.inject({}) { |res,(k,v)| res.store(v.to_s.split(" ")[0],true); res }
+		end
 	end
 end

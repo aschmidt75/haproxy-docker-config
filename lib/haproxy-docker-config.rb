@@ -10,7 +10,12 @@ require 'actions/action_base'
 require 'actions/add_action'
 require 'actions/check_action'
 
-options = {}
+require 'json/pure'
+require 'yaml'
+
+options = {
+	:output_style => :plain
+	}
 optparse = OptionParser.new do |opts|
 	opts.on( '-h', '--help', 'Show help details') do	
 		puts opts
@@ -29,19 +34,27 @@ optparse = OptionParser.new do |opts|
 		options[:verbose] = true
 	end
 
-	opts.on( '-a', '--add ID1[:PORT][,ID2[:PORT],...]', 'Add one or more container (identified by docker instance id) with optional public-facing port number') do |s|
+	opts.on( '--yaml', 'Output as yaml.') do 
+		options[:output_style] = :yaml
+	end
+
+	opts.on( '--json', 'Output as json.') do 
+		options[:output_style] = :json
+	end
+
+	opts.on( '-a', '--add ID1[:PORT][,ID2[:PORT],...]', 'Add one or more container (identified by docker instance id) with optional private port number. Public-facing port will be looked up.') do |s|
 		options[:add_string] = s
-		options[:action_given] = true
+		options[:action_given] = :add
 	end
 
 	opts.on( '-d', '--delete ID1[,ID2,...]', 'Delete one or more containers (identified by docker instance id) from balancing') do |s|
 		options[:delete_string] = s
-		options[:action_given] = true
+		options[:action_given] = :delete
 	end
 
-	opts.on( '-c', '--check ID1[,ID2,...]', 'Check if given containers (identified by docker instance id) are balanced by given listener') do |s|
+	opts.on( '-c', '--check [ID1,ID2,...]', 'Check if given containers (identified by docker instance id) are balanced by given listener. Return list of all balanced containers if no id give') do |s|
 		options[:check_string] = s
-		options[:action_given] = true
+		options[:action_given] = :check
 	end
 end
 
@@ -60,22 +73,36 @@ end
 
 # TODO: quick check whether listener name is valid
 
-if options[:add_string] then
+if options[:action_given] == :add then
 	begin
 		action = HADockerConfig_Add.new(
 			options[:listener],
-			options[:add_string]
+			options[:add_string],
+			options[:base_url]
 		)	
-		action.process
+		res = action.process
+		# dump result
+		if options[:output_style] == :plain then
+			res.each do |instance_id, m|
+				puts format("%-20s\tbalanced\t%s:%s",instance_id,m[:ip],m[:port])
+			end
+		end
+		if options[:output_style] == :yaml then
+			puts res.to_yaml
+		end
+		if options[:output_style] == :json then
+			puts res.to_json
+		end
+
 
 	rescue => e
-		STDERR.puts("ERROR: Adding balancer entries. Not restarting. Please check haproxy.cfg")
+		STDERR.puts("ERROR: Adding balancer entries. Not restarting. Please check haproxy.cfg. #{e.message}")
 		if options[:verbose] then
-			STDERR.puts e
+			STDERR.puts e.inspect
 		end
 	end
 end
-if options[:delete_string] then
+if options[:action_given] == :delete then
 	begin
 		action = HADockerConfig_Delete.new(
 			options[:listener],
@@ -84,24 +111,35 @@ if options[:delete_string] then
 		action.process
 
 	rescue => e
-		STDERR.puts("ERROR: Deleting balancer entries. Not restarting. Please check haproxy.cfg")
+		STDERR.puts("ERROR: Deleting balancer entries. Not restarting. Please check haproxy.cfg. #{e.message}")
 		if options[:verbose] then
 			STDERR.puts e
 		end
 	end
 end
-if options[:check_string] then
+if options[:action_given] == :check then
 	begin
 		action = HADockerConfig_Check.new(
 			options[:listener],
 			options[:check_string]
 		)	
-		action.process
+		res = action.process
 
 		# dump result
+		if options[:output_style] == :plain then
+			res.each do |instance_id, status|
+				puts format("%-20s\t%s",instance_id,((status==true) ? "balanced" : "not_balanced"))
+			end
+		end
+		if options[:output_style] == :yaml then
+			puts res.to_yaml
+		end
+		if options[:output_style] == :json then
+			puts res.to_json
+		end
 
 	rescue => e
-		STDERR.puts("ERROR: Checking balancer entries.")
+		STDERR.puts("ERROR: Checking balancer entries.  #{e.message}" )
 		if options[:verbose] then
 			STDERR.puts e
 		end
