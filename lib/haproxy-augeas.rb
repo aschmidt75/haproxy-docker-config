@@ -89,18 +89,15 @@ module Haproxy_Augeas
 
 	# given an augeas key to a comment inside a listen section,
 	# this renders an ERB output from the comment and the data map
-	def self.evaluate_server_comment_entry(key_to_comment,data)
+	def self.evaluate_server_comment_entry(aug,key_to_comment,data)
 		res = nil
-		aug = Augeas.open
-		begin
-			erb_text0 = aug.get(key_to_comment)
-			# string prefix
-			erb_text = erb_text0.split(" ")[1..-1].join(" ")
-			r = RenderContext.new(data)
-			res = r.render(erb_text)
-		ensure
-			aug.close if aug
-		end
+
+		erb_text0 = aug.get(key_to_comment)
+		# string prefix
+		erb_text = erb_text0.split(" ")[1..-1].join(" ")
+		r = RenderContext.new(data)
+		res = r.render(erb_text).strip
+
 		res
 	end
 
@@ -170,7 +167,7 @@ module Haproxy_Augeas
 
 				# pre-render the new data..
 				key_to_command = "#{e}/#comment"
-				new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data)
+				new_server_entry = self.evaluate_server_comment_entry(aug,key_to_command,server_data)
 
 				# grab out the server lines
 				aug.match("#{e}/server").each do |server|
@@ -194,8 +191,6 @@ module Haproxy_Augeas
 				raise IOError, "Failed to save changes"
 			end
 
-		rescue => e
-			STDERR.puts e
 		ensure
 			aug.close if aug
 		end
@@ -223,8 +218,6 @@ module Haproxy_Augeas
 				raise IOError, "Failed to save changes"
 			end
 
-		rescue => e
-			STDERR.puts e
 		ensure
 			aug.close if aug
 		end
@@ -252,7 +245,7 @@ module Haproxy_Augeas
 						if server_name =~ /#{server_id}/ then
 							# render the new data..
 							key_to_command = "#{e}/#comment"
-							new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data)
+							new_server_entry = self.evaluate_server_comment_entry(aug,key_to_command,server_data)
 
 							# rewrite existing entry (maybe port has changed)
 							aug.set server,new_server_entry
@@ -262,24 +255,25 @@ module Haproxy_Augeas
 						end
 					end	
 				end
-				# b_missing contains all entries that have not been replaced. Add them here.
-				b_missing.each do |server_id, server_data|
-					# render the new data..
-					key_to_command = "#{e}/#comment"
-					new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data)
+                                # b_missing contains all entries that have not been replaced. Add them here.
+                                to_be_added = []
+                                b_missing.each do |server_id, server_data|
+                                        # render the new data..
+                                        key_to_command = "#{e}/#comment"
+                                        new_server_entry = self.evaluate_server_comment_entry(aug,key_to_command,server_data)
+                                        to_be_added << new_server_entry
+                                end
 
-					# add a new entry
-					new_key = "#{e}/server[last()+1]"
-					aug.set! new_key,new_server_entry
-				end
+                                # add a new entry
+                                new_key = "#{e}/server[last()+1]"
+                                aug.set! new_key, to_be_added
 			end
+
 			# save changes
 			unless aug.save
 				raise IOError, "Failed to save changes"
 			end
 
-		rescue => e
-			STDERR.puts e
 		ensure
 			aug.close if aug
 		end

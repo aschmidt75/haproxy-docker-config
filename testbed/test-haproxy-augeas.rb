@@ -92,17 +92,20 @@ module Haproxy_Docker
 
 	# given an augeas key to a comment inside a listen section,
 	# this renders an ERB output from the comment and the data map
-	def self.evaluate_server_comment_entry(key_to_comment,data)
+	def self.evaluate_server_comment_entry(key_to_comment,data,aug=nil)
 		res = nil
-		aug = Augeas.open
+		unless aug
+			aug = Augeas.open	
+			aug_opened = true
+		end
 		begin
 			erb_text0 = aug.get(key_to_comment)
 			# string prefix
 			erb_text = erb_text0.split(" ")[1..-1].join(" ")
 			r = RenderContext.new(data)
-			res = r.render(erb_text)
+			res = r.render(erb_text).strip
 		ensure
-			aug.close if aug
+			aug.close if aug && aug_opened
 		end
 		res
 	end
@@ -255,7 +258,7 @@ module Haproxy_Docker
 						if server_name =~ /#{server_id}/ then
 							# render the new data..
 							key_to_command = "#{e}/#comment"
-							new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data)
+							new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data,aug)
 
 							# rewrite existing entry (maybe port has changed)
 							aug.set server,new_server_entry
@@ -266,15 +269,19 @@ module Haproxy_Docker
 					end	
 				end
 				# b_missing contains all entries that have not been replaced. Add them here.
+				to_be_added = []
 				b_missing.each do |server_id, server_data|
 					# render the new data..
 					key_to_command = "#{e}/#comment"
-					new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data)
-
-					# add a new entry
-					new_key = "#{e}/server[last()+1]"
-					aug.set! new_key,new_server_entry
+					new_server_entry = self.evaluate_server_comment_entry(key_to_command,server_data,aug)
+					to_be_added << new_server_entry
 				end
+
+				# add a new entry
+				new_key = "#{e}/server[last()+1]"
+pp new_key
+pp to_be_added
+				aug.set! new_key, to_be_added
 			end
 			# save changes
 			unless aug.save
@@ -302,29 +309,29 @@ end
 
 # prepare a server line from comment 
 #pp Haproxy_Docker::evaluate_server_comment_entry(
-#	"/files/etc/haproxy/haproxy.cfg/listen[1]/dockerha-app1/#comment", 
+#	"/files/etc/haproxy/haproxy.cfg/listen[1]/dockerha-test/#comment", 
 #	{ :id => "id1", :ip => "127.0.0.1", :port => "8080" })
 
 # check if a named server is defined within a listener entry
-#pp Haproxy_Docker::has_server_within_listener?("id4711", "dockerha-app1")
-#pp Haproxy_Docker::has_server_within_listener?("id1", "dockerha-app1")
+#pp Haproxy_Docker::has_server_within_listener?("id4711", "dockerha-test")
+#pp Haproxy_Docker::has_server_within_listener?("id1", "dockerha-test")
 
 # add servers to a listener
-Haproxy_Docker::ensure_server_within_listener("id2","dockerha-app1", { :ip => "127.0.0.1", :port => "8082" })
+#Haproxy_Docker::ensure_server_within_listener("id2","dockerha-test", { :ip => "127.0.0.1", :port => "8082" })
 # change  server entry 
-Haproxy_Docker::ensure_server_within_listener("id2","dockerha-app1", { :ip => "127.0.0.1", :port => "8083" })
+#Haproxy_Docker::ensure_server_within_listener("id2","dockerha-test", { :ip => "127.0.0.1", :port => "8083" })
 # add/change on multiple entries
 Haproxy_Docker::ensure_all_servers_within_listener(
 	{ 	
 		"id2" => { :ip => "127.0.0.1", :port => "8083" },
 		"id3" => { :ip => "127.0.0.2", :port => "8084" },
 		"id4" => { :ip => "127.0.0.2", :port => "8085" },
-	}, "dockerha-app1")
+	}, "dockerha-test")
 # remove a server 
-Haproxy_Docker::ensure_server_absent_within_listener("id2","dockerha-app1")
+#Haproxy_Docker::ensure_server_absent_within_listener("id2","dockerha-test")
 
 # check if servers are defined, multiple server -
-pp Haproxy_Docker::has_servers_within_listener?(["id1", "id2", "id3", "id4"], "dockerha-app1")
+pp Haproxy_Docker::has_servers_within_listener?(["id1", "id2", "id3", "id4"], "dockerha-test")
 
 
 

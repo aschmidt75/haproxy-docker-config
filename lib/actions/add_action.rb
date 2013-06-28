@@ -53,7 +53,7 @@ class HADockerConfig_Add < HADockerConfig_Base
 				public_port = port_mappings[source_port.to_s]
 			else
 				# source port is not given, grab the first one (if there is one)
-				public_port = port_mappings.first[0] if port_mappings.size > 0
+				public_port = port_mappings.first[1] if port_mappings.size > 0
 			end
 			# no port? -> get out.
 			raise "Did not find port forwarding for id=#{instance_id}, port=#{source_port}" unless public_port
