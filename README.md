@@ -23,7 +23,10 @@ listen  dockerha-app1   0.0.0.0:8380
         balance         roundrobin
         #DOCKERSERVER   <%= id %> <%= ip %>:<%= port %> check inter 2000 rise 2 fall 5
 ```
-Use the listener name given above as input to -l/--listen parameter.
+Use the listener name as input to -l/--listen parameter, as in the above example, dockerha-app1. Use container ids of running containers as input to the --add, --delete, --check parameters. proxy-docker-config will take the container id and query container details from the docker API, such as the public facing port, to render the comment line above. 
+It is able to 
+  * restart haproxy by calling the System V init scripts 
+  * hot-restart haproxy by using the -sf option of haproxy (see /usr/share/doc/haproxy/haproxy-en.txt.gz, 2.4.1 Hot reconfiguration)
 
 
 ##Examples##
@@ -49,13 +52,13 @@ a32198606724            balanced        127.0.0.1:49159
 
 See if servers are balanced
 ```
-# ./haproxy-docker-config.rb -l dockerha-app1 -c -v
+# ./haproxy-docker-config.rb -l dockerha-app1 -c 
 caee75cbf7b5            balanced
 597215a9450b            balanced
 a32198606724            balanced
 ```
 
-See if servers are not balanced 
+See what servers are not balanced (the 4th one)
 ```
 # ./haproxy-docker-config.rb -l dockerha-app1 -c f2cc6e975169
 f2cc6e975169            not_balanced
@@ -84,13 +87,12 @@ caee75cbf7b5            found
 
 ##Dependencies##
 As a dependency, you'll need
- * [Docker](http://www.docker.io/)
- * The docker-client from (https://github.com/geku/docker-client)
- * libaugeas
+ * The [docker-client](https://github.com/geku/docker-client)
+ * libaugeas and libaugeas-ruby
 
 Of course it does not make much sense without
- * docker
- * haproxy
+ * [Docker](http://www.docker.io/)
+ * [haproxy](http://haproxy.1wt.eu/)
 
 
 ##How##
@@ -122,7 +124,8 @@ Usage: haproxy-docker-config [options]
   ```
 
 ##Todo##
-  * .
+  * make docker base url configurable/parameterize
 
 ##License##
 This is OPEN SOURCE, see LICENSE.txt for details.
+
