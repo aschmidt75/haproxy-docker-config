@@ -4,22 +4,29 @@ haproxy-docker-config
 Automatically configure haproxy to balance between docker instances, allowing easy shifting of containers.
 
 
-What
-====
+##What##
 A docker container usually exports a public-facing port on the local interface of the host. To allow external clients to access the container, a balancing solution such as haproxy takes place on the host. haproxy-docker-config uses libaugeas to rewrite the haproxy configuration file on-the-fly, according to container details after looking them up from the docker api. Basic modifications are allowed, such as 
-	* taking new containers into balancing, 
-	* taking them out of balancing, 
-	* checking whether container are balanced and 
-	* verifying that all containers within the haproxy configuration are running.
+  * taking new containers into balancing, 
+  * taking them out of balancing, 
+  * checking whether container are balanced and 
+  * verifying that all containers within the haproxy configuration are running.
 haproxy can be restarted or hot-restarted.
 
-Why
-===
+##Why##
 Docker containers can be brought up and taken down with virtually no effort, so a balancing solution has to be in close sync to the container state. haproxy-docker-config helps maintaining this state and serves as a basis for further dynamic balancing solutions.
 
 
-Examples
-========
+##How##
+First, open haproxy.cfg and create a listener with your desired settings. Create exactly one server entry as a comment, use ERB-style variables to render ip and port information into it. proxy-docker-config uses libaugeas to open the augeas resource /files/etc/haproxy/haproxy.cfg and will use the comment line to create new server entries by rendering it with details
+```
+listen  dockerha-app1   0.0.0.0:8380
+        balance         roundrobin
+        #DOCKERSERVER   <%= id %> <%= ip %>:<%= port %> check inter 2000 rise 2 fall 5
+```
+Use the listener name given above as input to -l/--listen parameter.
+
+
+##Examples##
 Given this docker state
 ```
 # docker ps
@@ -61,30 +68,32 @@ caee75cbf7b5 127.0.0.1:49161 check inter 2000 rise 2 fall 5
 597215a9450b 127.0.0.1:49160 check inter 2000 rise 2 fall 5
 ```
 
-See if all containers in haproxy balancing are running. Kill one, check again.
+See if all containers in haproxy balancing are running. Kill one, see again.
 ```
 # ./haproxy-docker-config.rb -l dockerha-app1 --verify
 caee75cbf7b5            found
 597215a9450b            found
-root@c018ubu1304:~/haproxy-docker-config/lib# docker kill 597215a9450b
+
+# docker kill 597215a9450b
 597215a9450b
-root@c018ubu1304:~/haproxy-docker-config/lib# ./haproxy-docker-config.rb -l dockerha-app1 --verify
+
+# ./haproxy-docker-config.rb -l dockerha-app1 --verify
 caee75cbf7b5            found
 597215a9450b            not_found
 ```
 
-Dependencies
-============
+##Dependencies##
 As a dependency, you'll need
-  * libaugeas
+ * [Docker](http://www.docker.io/)
+ * The docker-client from (https://github.com/geku/docker-client)
+ * libaugeas
 
 Of course it does not make much sense without
-  * docker
-  * haproxy
+ * docker
+ * haproxy
 
 
-How
-===
+##How##
 proxy-docker-config uses libaugeas to open the augeas resource /files/etc/haproxy/haproxy.cfg. 
 First, open haproxy.cfg and create a listener with your desired settings. Create exactly one server entry as a comment, use ERB-style variables to render ip and port information into it. proxy-docker-config will use this line to create new server entries:
 ```
@@ -92,7 +101,7 @@ listen  dockerha-app1   0.0.0.0:8380
         balance         roundrobin
         #DOCKERSERVER   <%= id %> <%= ip %>:<%= port %> check inter 2000 rise 2 fall 5
 ```
-Use the listener name given about as input to -l/--listen parameter.
+Use the listener name given above as input to -l/--listen parameter.
 
 
 ```
@@ -112,10 +121,8 @@ Usage: haproxy-docker-config [options]
         --json                       Output as json.
   ```
 
-Todo
-====
+##Todo##
   * .
 
-License
-=======
+##License##
 This is OPEN SOURCE, see LICENSE.txt for details.
