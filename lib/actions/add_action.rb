@@ -1,12 +1,36 @@
+# The MIT License (MIT)
+#
+# Copyright (c) 2013 Andreas Schmidt
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 require 'docker'
 include Docker
 
+# Class for Adding server entries to he haproxy configuration
+#
 class HADockerConfig_Add < HADockerConfig_Base
 
-	# listener
-	# server id(s)
-	# base url
-	def initialize(l,s,b)	
+	# +l+::	listener
+	# +s+::	server id(s)
+	# +b+::	base url 
+	def initialize(l,s,b = nil)	
 		super(l,s)
 		@base_url = b || 'http://localhost:4243'
 	end
@@ -22,7 +46,13 @@ class HADockerConfig_Add < HADockerConfig_Base
 		end
 	end
 
+	# Takes given servers id, compares them against the list of currently mapped docker container
+	# ports. Queries the public facing port for each container and uses Haproxy_Augeas to add
+	# that port to the given listener.
+	#
 	def process
+                raise "No server idsi/ports given" unless @data && @data.size > 0
+
 		# query a map of all running docker instances, together with their 
 		# port forwardings
 		config = { :base_url => @base_url }
@@ -59,7 +89,7 @@ class HADockerConfig_Add < HADockerConfig_Base
 			raise "Did not find port forwarding for id=#{instance_id}, port=#{source_port}" unless public_port
 		
 			# 
-			res.store instance_id, { :port => public_port, :ip => ip_address }
+			res.store instance_id, { :port => public_port, :ip => "127.0.0.1", :id => instance_id }
 		end		
 
 		# initiate forwardings..

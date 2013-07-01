@@ -279,8 +279,6 @@ module Haproxy_Docker
 
 				# add a new entry
 				new_key = "#{e}/server[last()+1]"
-pp new_key
-pp to_be_added
 				aug.set! new_key, to_be_added
 			end
 			# save changes

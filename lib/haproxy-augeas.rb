@@ -1,5 +1,27 @@
 #!/usr/bin/env ruby
 
+# The MIT License (MIT)
+#
+# Copyright (c) 2013 Andreas Schmidt
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 
 require 'augeas'
 require 'erb'
@@ -195,6 +217,36 @@ module Haproxy_Augeas
 			aug.close if aug
 		end
 	end
+
+	# removes all given servers from a listener
+	def self.ensure_all_servers_absent_within_listener(server_ids,listener_name)
+		aug = Augeas.open
+		begin
+			server_ids.each do |server_id|
+				r = Regexp.new server_id
+				x = aug.match(mkey("/listen[*]/*")).each do |e|
+					key = e.split("/").last
+					next if key != listener_name
+	
+					aug.match("#{e}/server").each do |server|
+						server_name = aug.get(server)
+						if server_name.match r then
+							aug.rm server
+							break			# break out since we manipulated the tree..
+						end
+					end
+				end
+			end
+			# save changes
+			unless aug.save
+				raise IOError, "Failed to save changes"
+			end
+
+		ensure
+			aug.close if aug
+		end
+	end
+
 	
 	# removes a server from a listener
 	def self.ensure_server_absent_within_listener(server_id,listener_name)

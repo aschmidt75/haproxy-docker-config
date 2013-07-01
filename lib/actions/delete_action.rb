@@ -1,4 +1,3 @@
-
 # The MIT License (MIT)
 #
 # Copyright (c) 2013 Andreas Schmidt
@@ -21,30 +20,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Base Class for actions
-#
-class HADockerConfig_Base
-	attr_reader	:listener, :input_data, :data
+require 'docker'
+include Docker
 
-	# initializes with 
-	# +listener+::		haproxy listener name from LISTEN section
-	# +input_data+::	string from command line, to be parsed
-	#
-	def initialize(listener,input_data)
-		@listener = listener
-		@input_data = input_data
-		parse
+# Action Class for deleting server entries.
+class HADockerConfig_Delete < HADockerConfig_Base
+
+	# +l+::	listener
+	# +s+::	server id(s)
+	# +b+::	base url 
+	def initialize(l,s,b = nil)	
+		super(l,s)
+		@base_url = b || 'http://localhost:4243'
 	end
-	
-	# take input from cmd line, parse appropriately, put into data
+
+	# we expect @input_data to be ID[,ID,...], so split and parse it into @data
 	def parse
+		@data = @input_data.split(",")
 	end
 
-	# to be overloaded by classes
+	# 
 	def process
+		raise "No server ids given" unless @data && @data.size > 0
+
+		# just remove forwardings, we dont have to look up or sync anything here.
+		Haproxy_Augeas::ensure_all_servers_absent_within_listener @data, @listener
 	end
 
-	def to_s
-		"#{self.class.to_s}:[listener=#{@listener}, data=#{data.to_s}, input=#{input_data}]"
-	end
 end
