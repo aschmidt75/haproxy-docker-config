@@ -125,6 +125,9 @@ Usage: haproxy-docker-config [options]
 
 ##Todo##
   * make docker base url configurable/parameterize
+  * implement alternativ rewrite solution, parallel to libaugeas
+  * gem
+  * select container by tags of images
 
 ##License##
 This is OPEN SOURCE, see LICENSE.txt for details.
