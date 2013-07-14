@@ -73,7 +73,7 @@ class HADockerConfig_Add < HADockerConfig_Base
 
 			# grab out mappings and local ip address
 			port_mappings = state["PortMapping"] || {}
-			ip_address = state["IpAddress"]
+			ip_address = state["IPAddress"]
 
 			raise "Unable to look up port mapping for id=#{instance_id}" unless port_mappings && ip_address
 
