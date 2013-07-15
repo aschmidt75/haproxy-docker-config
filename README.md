@@ -89,11 +89,13 @@ caee75cbf7b5            found
 As a dependency, you'll need
  * The [docker-client](https://github.com/geku/docker-client)
  * libaugeas and libaugeas-ruby
+ * [haproxy lens](https://github.com/camptocamp/puppet-haproxy/commits/)
 
 Of course it does not make much sense without
  * [Docker](http://www.docker.io/)
  * [haproxy](http://haproxy.1wt.eu/)
 
+For a sample setup, please see [wiki entry](https://github.com/aschmidt75/haproxy-docker-config/wiki/Setup-on-Ubuntu-13.04)
 
 ##How##
 proxy-docker-config uses libaugeas to open the augeas resource /files/etc/haproxy/haproxy.cfg. 
