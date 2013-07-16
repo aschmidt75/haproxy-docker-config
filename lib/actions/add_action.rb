@@ -32,7 +32,8 @@ class HADockerConfig_Add < HADockerConfig_Base
 	# +b+::	base url 
 	def initialize(l,s,b = nil)
 		super(l,s)
-		@base_url = b || 'http://localhost:4243'
+		@base_url = b || 'http://127.0.0.1:4243'
+		@local_ip = @base_url.sub(%r{\Ahttps?://},'').sub(/:\d+\Z/,'')
 	end
 
 	# we expect @input_data to be ID:[PORT][,ID:[:PORT]], so split and parse it into @data
@@ -73,7 +74,7 @@ class HADockerConfig_Add < HADockerConfig_Base
 
 			# grab out mappings and local ip address
 			port_mappings = state["PortMapping"] || {}
-			ip_address = state["IpAddress"]
+			ip_address = state["IPAddress"]
 
 			raise "Unable to look up port mapping for id=#{instance_id}" unless port_mappings && ip_address
 
@@ -87,10 +88,10 @@ class HADockerConfig_Add < HADockerConfig_Base
 			end
 			# no port? -> get out.
 			raise "Did not find port forwarding for id=#{instance_id}, port=#{source_port}" unless public_port
-
-			#
-			res.store instance_id, { :port => public_port, :ip => "127.0.0.1", :id => instance_id }
-		end
+		
+			# 
+			res.store instance_id, { :port => public_port, :ip => @local_ip, :id => instance_id }
+		end		
 
 		# initiate forwardings..
 		# res has the structure of what ensure_ expects:

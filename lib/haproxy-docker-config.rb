@@ -54,6 +54,10 @@ optparse = OptionParser.new do |opts|
     options[:listener] = s
   end
 
+  opts.on('--docker-url IPADDRESS[:PORT]', 'URL (and optional port) for the Docker host where docker -d is running. Default http://localhost:4243') do |uri|
+    options[:base_url] = uri
+  end
+
   opts.on('-a', '--add ID1[:PORT][,ID2[:PORT],...]', 'Add one or more containers (identified by docker container id) with optional private port number. Public-facing port will be looked up.') do |s|
     multiple_options_error = true if options[:action_given]
     options[:add_string] = s
