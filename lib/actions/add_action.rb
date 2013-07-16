@@ -30,7 +30,7 @@ class HADockerConfig_Add < HADockerConfig_Base
 	# +l+::	listener
 	# +s+::	server id(s)
 	# +b+::	base url 
-	def initialize(l,s,b = nil)	
+	def initialize(l,s,b = nil)
 		super(l,s)
 		@base_url = b || 'http://localhost:4243'
 	end
@@ -39,10 +39,10 @@ class HADockerConfig_Add < HADockerConfig_Base
 	def parse
 		@data = []
 		@input_data.split(",").each do |id_port_pair|
-			a = id_port_pair.split(":")
+			a = id_port_pair.split(":") | []
 			# no port? add 0 to indicate that we should find out ourselves
 			a << "0" if a.size < 2
-			@data << [ a[0],a[1].to_i ] 
+			@data << [ a[0],a[1].to_i ]
 		end
 	end
 
@@ -51,17 +51,17 @@ class HADockerConfig_Add < HADockerConfig_Base
 	# that port to the given listener.
 	#
 	def process
-                raise "No server idsi/ports given" unless @data && @data.size > 0
+    raise 'No server ids/ports given' unless @data && @data.size > 0
 
-		# query a map of all running docker instances, together with their 
+		# query a map of all running docker instances, together with their
 		# port forwardings
 		config = { :base_url => @base_url }
 		docker = API.new config
-		
+
 		begin
 			current_docker_forwarding_state = get_docker_port_mapping_state(docker)
 		rescue => e
-			raise "Unable to get port mapping state from docker api, #{e.message}" 
+			raise "Unable to get port mapping state from docker api, #{e.message}"
 		end
 
 		res = {}
@@ -87,23 +87,23 @@ class HADockerConfig_Add < HADockerConfig_Base
 			end
 			# no port? -> get out.
 			raise "Did not find port forwarding for id=#{instance_id}, port=#{source_port}" unless public_port
-		
-			# 
+
+			#
 			res.store instance_id, { :port => public_port, :ip => "127.0.0.1", :id => instance_id }
-		end		
+		end
 
 		# initiate forwardings..
 		# res has the structure of what ensure_ expects:
 		# #id => { :port => #port, :ip => #localip }
 		Haproxy_Augeas::ensure_all_servers_within_listener res, @listener
-	
+
 		return res
 	end
 
 	private
 	# inspects all running container, looks up network settings and
 	# returns a map from container id => NetworkSettings structure
-	def get_docker_port_mapping_state(docker)
+  def get_docker_port_mapping_state(docker)
 		res = {}
 		cont = docker.containers
 		cont.list.each do |c|
@@ -113,6 +113,6 @@ class HADockerConfig_Add < HADockerConfig_Base
 			network_settings = e["NetworkSettings"] || {}
 			res.store(key, network_settings)
 		end
-		res	
+		res
 	end
 end
