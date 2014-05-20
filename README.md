@@ -89,7 +89,7 @@ caee75cbf7b5            found
 As a dependency, you'll need
  * The [docker-client](https://github.com/geku/docker-client)
  * libaugeas and libaugeas-ruby
- * [haproxy lens](https://github.com/camptocamp/puppet-haproxy/blob/master/files/haproxy.aug)
+ * [haproxy lens](https://github.com/kainz/puppet-haproxy/blob/master/files/haproxy.aug)
 
 Of course it does not make much sense without
  * [Docker](http://www.docker.io/)
