@@ -4,7 +4,7 @@ haproxy-docker-config
 Automatically configure haproxy to balance between docker instances, allowing easy shifting of containers.
 
 
-##What##
+## What ##
 A docker container usually exports a public-facing port on the local interface of the host. To allow external clients to access the container, a balancing solution such as haproxy takes place on the host. haproxy-docker-config uses libaugeas to rewrite the haproxy configuration file on-the-fly, according to container details after looking them up from the docker api. Basic modifications are allowed, such as 
   * taking new containers into balancing, 
   * taking them out of balancing, 
@@ -12,11 +12,11 @@ A docker container usually exports a public-facing port on the local interface o
   * verifying that all containers within the haproxy configuration are running.
 haproxy can be restarted or hot-restarted.
 
-##Why##
+## Why ##
 Docker containers can be brought up and taken down with virtually no effort, so a balancing solution has to be in close sync to the container state. haproxy-docker-config helps maintaining this state and serves as a basis for further dynamic balancing solutions.
 
 
-##How##
+## How ##
 First, open haproxy.cfg and create a listener with your desired settings. Create exactly one server entry as a comment, use ERB-style variables to render ip and port information into it. proxy-docker-config uses libaugeas to open the augeas resource /files/etc/haproxy/haproxy.cfg and will use the comment line to create new server entries by rendering it with details
 ```
 listen  dockerha-app1   0.0.0.0:8380
@@ -29,7 +29,7 @@ It is able to
   * hot-restart haproxy by using the -sf option of haproxy (see /usr/share/doc/haproxy/haproxy-en.txt.gz, 2.4.1 Hot reconfiguration)
 
 
-##Examples##
+## Examples ##
 Given this docker state
 ```
 # docker ps
@@ -85,7 +85,7 @@ caee75cbf7b5            found
 597215a9450b            not_found
 ```
 
-##Dependencies##
+## Dependencies ##
 As a dependency, you'll need
  * The [docker-client](https://github.com/geku/docker-client)
  * libaugeas and libaugeas-ruby
@@ -97,7 +97,7 @@ Of course it does not make much sense without
 
 For a sample setup, please see [wiki entry](https://github.com/aschmidt75/haproxy-docker-config/wiki/Setup-on-Ubuntu-13.04)
 
-##How##
+## How ##
 proxy-docker-config uses libaugeas to open the augeas resource /files/etc/haproxy/haproxy.cfg. 
 First, open haproxy.cfg and create a listener with your desired settings. Create exactly one server entry as a comment, use ERB-style variables to render ip and port information into it. proxy-docker-config will use this line to create new server entries:
 ```
